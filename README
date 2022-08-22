@@ -1,0 +1,5 @@
+# Docker Bitnami/mongodb
+
+```bash
+$ docker run --name mongodb_bitnami -p 27017:27017 -d -e ALLOW_EMPTY_PASSWORD=yes -e MONGODB_EXTRA_FLAGS='--wiredTigerCacheSizeGB=2' bitnami/mongodb:latest
+```
