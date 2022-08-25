@@ -9,8 +9,10 @@ router.post('/signup', authController.signup)
 
 router.post('/signin', authController.signin)
 
-router.post('/me', (req, res)=>{
-    res.status(200).json({mensagem:"It's me!"})
+router.put('/change', authController.change)
+
+router.post('/me', (req, res) => {
+    res.status(200).json({ mensagem: "It's me!" })
 })
 
 export default router
