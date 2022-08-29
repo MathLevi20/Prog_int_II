@@ -1,17 +1,23 @@
-import { Request, Response } from "express"
+import { NextFunction, Request, Response } from "express"
 import { db } from "../data/mongo/MongoDatabase"
 var crypto = require('crypto');
-require("dotenv-safe").config();
 const jwt = require('jsonwebtoken');
-
+var RSA = require("dotenv").config({ path: "./.env" })
+    
 interface User {
     id?: string
     name: string
     email: string
     password: string
 }
-function hash(params: any) {
-
+export function verityJTM(req: Request, res: Response, next: NextFunction) {
+    const token = req.headers["x-acess-token"]
+    jwt.verify(token, 'abc', (err: Error, decoded: any) => {
+        if (err) return res.status(401).end()
+        console.log(req)
+        req = decoded.id
+        next()
+    })
 }
 export class AuthController {
     private users
@@ -53,17 +59,27 @@ export class AuthController {
         console.log(foundUser?.password)
         const hash = await crypto.createHash('md5').update(password).digest('hex');
         const test = await foundUser?.password
-        console.log(test)
+        console.log(hash)
         if (!foundUser) {
             return res.status(401).json({ error: "Usuário e/ou senha incorretos!" })
         }
         if (foundUser.password != hash) {
             return res.status(401).json({ error: "Senha Incorreta" })
         }
-        const token = jwt.sign({ 1: Number }, process.env.SECRET, {
+
+        const token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, {
             expiresIn: 300 // expires in 5min
         });
-        return res.json({ auth: true, token: token });
+        const updateDoc = {
+            $set: {
+                "token": token
+            },
+        };
+        const result = await this.users.findOneAndUpdate({
+            email: email
+     
+        },updateDoc)
+        return res.json({result, auth: true, token: token })
 
         return res.status(200).json(foundUser)
 
@@ -80,7 +96,8 @@ export class AuthController {
             },
         };
         var foundUser = await this.users.findOneAndUpdate({ email, password_hash }, updateDoc)
-
+        console.log(foundUser)
+        /*const token = jwt.sign({"_id"*/
         return res.status(200).json(foundUser)
     }
     /* public signin = async (req: Request, res: Response) => {
