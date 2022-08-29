@@ -10,7 +10,7 @@ app.use(express.json())
 app.use(LogMiddleware)
 
 app.get('/', (req, res) => {
-    res.status(200).json({ mensagem: "Roses are Red, Violets are Blue, I'm stuck on the Eastern Front, and so ARE FUCKING YOU!" })
+    res.status(200).json({ mensagem: "Roses are Red, Violets are Blue, I'm stuck on the Eastern Front, and so ARE F* YOU!" })
 })
 
 app.use(routes)
