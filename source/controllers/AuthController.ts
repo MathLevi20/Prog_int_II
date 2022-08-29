@@ -12,12 +12,26 @@ interface User {
 }
 export function verityJTM(req: Request, res: Response, next: NextFunction) {
     const token = req.headers["x-acess-token"]
-    jwt.verify(token, 'abc', (err: Error, decoded: any) => {
-        if (err) return res.status(401).end()
+    const refresh_token = req.headers["x-acess-token"]
+    jwt.verify(token, RSA.parsed.SECRET, (err: Error, decoded: any) => {
+        if (err) {
+            jwt.verify(refresh_token, RSA.parsed.SECRET, (err: Error, decoded: any) => {
+                if (err)
+                    return res.status(401).json({ "error": true, "message": 'Unauthorized access.' });
+            })
+        }
+        else {
+            return res.status(403).send({
+                "error": true,
+                "message": 'No token provided.'
+            });
+        }
         console.log(req)
         req = decoded.id
         next()
-    })
+    }
+
+    )
 }
 export class AuthController {
     private users
@@ -29,7 +43,7 @@ export class AuthController {
     public signup = async (req: Request, res: Response) => {
         var letter = /[a-zA-Z]/;
         var number = /[0-9]/;
-        const { email, name, password, val_password } = req.body
+        const { email, name, password, val_password: valid_password } = req.body
         const hash = await crypto.createHash('md5').update(password).digest('hex');
         console.log(hash)
         const foundUser = await this.users.findOne<User>({
@@ -38,7 +52,7 @@ export class AuthController {
         if (foundUser) {
             return res.status(409).json({ error: "Já existe um usuário com este email!" })
         }
-        if (val_password == password) {
+        if (valid_password == password) {
             return res.status(401).json("As senhas não conferem")
         };
         if (password.length <= 6) {
@@ -65,9 +79,7 @@ export class AuthController {
         const foundUser = await this.users.findOne<User>({
             email
         })
-        console.log(foundUser?.password)
         const hash = await crypto.createHash('md5').update(password).digest('hex');
-        const test = await foundUser?.password
         console.log(hash)
         if (!foundUser) {
             return res.status(401).json({ error: "Usuário e/ou senha incorretos!" })
@@ -76,19 +88,19 @@ export class AuthController {
             return res.status(401).json({ error: "Senha Incorreta" })
         }
 
-        const token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, {
-            expiresIn: 300 // expires in 5min
-        });
+        const token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, { algorithm: "HS256", expiresIn: 1500 })
+        const refresh_token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, { algorithm: "HS256", expiresIn: 86400000 })
+
         const updateDoc = {
             $set: {
-                "token": token
+                "token": token,
+                "refresh_token": refresh_token
             },
         };
         const result = await this.users.findOneAndUpdate({
             email: email
         }, updateDoc)
         return res.json({ result, auth: true, token: token })
-        return res.status(200).json(foundUser)
     }
 
 
@@ -123,34 +135,8 @@ export class AuthController {
             },
         };
         var foundUser = await this.users.findOneAndUpdate({ email, password }, updateDoc);
-        console.log(typeof foundUser)
-        console.log(password)
-        console.log(updateDoc)
-
-        /*const token = jwt.sign({"_id"*/
         return res.status(200).json(foundUser)
     }
-    /* public signin = async (req: Request, res: Response) => {
-          await db.sync();
-          const {email, password} = req.body
-          var hash = crypto.createHash('md5').update(password + "uwu").digest('hex');
-          const foundUser = await User.findOne({
-              where: {
-                  email: email
-              }
-          })
-          if(foundUser == null){
-              return res.status(400).json("usuário não encontrado")
-          }
-          if(foundUser.password != hash){
-              return res.status(401).json("senha incorreta")
-          }
-          
-          const token = jwt.sign({"id": foundUser.id}, secret, {expiresIn: 900})
-          return res.status(200).json({
-              auth : true,
-              token
-          })
-      }*/
+
 
 }
