@@ -3,7 +3,7 @@ import { db } from "../data/mongo/MongoDatabase"
 var crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 var RSA = require("dotenv").config({ path: "./.env" })
-    
+
 interface User {
     id?: string
     name: string
@@ -27,20 +27,29 @@ export class AuthController {
     }
 
     public signup = async (req: Request, res: Response) => {
-
-        const { email, name, password } = req.body
-
-        const users = { email, name, password }
+        var letter = /[a-zA-Z]/;
+        var number = /[0-9]/;
+        const { email, name, password, val_password } = req.body
         const hash = await crypto.createHash('md5').update(password).digest('hex');
         console.log(hash)
         const foundUser = await this.users.findOne<User>({
             email
         })
-
         if (foundUser) {
             return res.status(409).json({ error: "Já existe um usuário com este email!" })
         }
-
+        if (val_password == password) {
+            return res.status(401).json("As senhas não conferem")
+        };
+        if (password.length <= 6) {
+            return res.status(401).json("a senha deve ter no mímimo 7 caracteres")
+        };
+        if (!number.test(password)) {
+            return res.status(401).json("Certifique-se de que a senha inclui um dígito")
+        }
+        if (!letter.test(password)) {
+            return res.status(401).json("Por favor, certifique-se de que a senha inclui um caractere maiúsculo e minúsculo")
+        }
         // save into db
         const result = await this.users.insertOne({
             name: name,
@@ -77,26 +86,47 @@ export class AuthController {
         };
         const result = await this.users.findOneAndUpdate({
             email: email
-     
-        },updateDoc)
-        return res.json({result, auth: true, token: token })
-
+        }, updateDoc)
+        return res.json({ result, auth: true, token: token })
         return res.status(200).json(foundUser)
-
     }
 
+
     public change = async (req: Request, res: Response) => {
-        const { email, password, change_password } = req.body
-        const password_hash = await crypto.createHash('md5').update(password).digest('hex');
+        var { email, password, change_password } = req.body
+        var password = await crypto.createHash('md5').update(password).digest('hex');
         const password_change = await crypto.createHash('md5').update(change_password).digest('hex');
+        var letter = /[a-zA-Z]/;
+        var number = /[0-9]/;
+
+        var foundUser_email = await this.users.findOne({ email });
+        console.log(foundUser_email)
+        if (foundUser_email == null) {
+            return res.status(401).json("Usuario não encontrado")
+        }
+        if (change_password.length <= 6) {
+            return res.status(401).json("a senha deve ter no mímimo 7 caracteres")
+        };
+        if (password == password_change) {
+            return res.status(401).json("Insira uma senha diferente")
+        }
+        if (!number.test(change_password)) {
+            return res.status(401).json("Certifique-se de que a senha inclui um dígito")
+        }
+        if (!letter.test(change_password)) {
+            return res.status(401).json("Por favor, certifique-se de que a senha inclui um caractere maiúsculo e minúsculo")
+        }
 
         const updateDoc = {
-            $set: {
+            "$set": {
                 "password": password_change
             },
         };
-        var foundUser = await this.users.findOneAndUpdate({ email, password_hash }, updateDoc)
-        console.log(foundUser)
+        var foundUser = await this.users.findOneAndUpdate({ email, password }, updateDoc);
+        console.log(typeof foundUser)
+        console.log(password)
+        console.log(updateDoc)
+
         /*const token = jwt.sign({"_id"*/
         return res.status(200).json(foundUser)
     }
