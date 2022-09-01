@@ -4,7 +4,7 @@ export function AuthMiddleware(request: Request,
     response: Response, next: NextFunction) {
 
     const auth = request.headers.authorization
-
+    console.log(auth)
     if (!auth) {
         return response.status(401).json('Crendenciais inválidas!')
     }

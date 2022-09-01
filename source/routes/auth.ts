@@ -10,7 +10,12 @@ router.post('/signup', authController.signup)
 
 router.post('/signin', authController.signin)
 
-router.put('/change', authController.change)
+router.post('/change', authController.change)
+
+router.post('/tel', authController.tel)
+
+router.post('/email', authController.email)
+
 
 router.post('/me', (req, res) => {
     res.status(200).json({ mensagem: "It's me!" })
