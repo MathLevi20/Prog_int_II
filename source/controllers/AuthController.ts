@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express"
 import { db } from "../data/mongo/MongoDatabase"
 var crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-var RSA = require("dotenv").config({ path: "./.env" })
+var RSA = "Olá"
 
 interface User {
     id?: string
@@ -10,12 +10,12 @@ interface User {
     email: string
     password: string
 }
-export function verityJTM(req: Request, res: Response, next: NextFunction) {
+export function verifyJWT(req: Request, res: Response, next: NextFunction) {
     const token = req.headers["x-acess-token"]
-    const refresh_token = req.headers["x-acess-token"]
-    jwt.verify(token, RSA.parsed.SECRET, (err: Error, decoded: any) => {
+    const refresh_token = req.headers["x-ref-token"]
+    jwt.verify(token, RSA, (err: Error, decoded: any) => {
         if (err) {
-            jwt.verify(refresh_token, RSA.parsed.SECRET, (err: Error, decoded: any) => {
+            jwt.verify(refresh_token, RSA, (err: Error, decoded: any) => {
                 if (err)
                     return res.status(401).json({ "error": true, "message": 'Unauthorized access.' });
             })
@@ -87,9 +87,9 @@ export class AuthController {
         if (foundUser.password != hash) {
             return res.status(401).json({ error: "Senha Incorreta" })
         }
-
-        const token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, { algorithm: "HS256", expiresIn: 1500 })
-        const refresh_token = jwt.sign({ "id": foundUser.id }, RSA.parsed.SECRET, { algorithm: "HS256", expiresIn: 86400000 })
+        console.log(foundUser.email)
+        const token = jwt.sign({ "id": 2 }, RSA, { algorithm: "HS256", expiresIn: 1500 })
+        const refresh_token = jwt.sign({ "id": 2 }, RSA, { algorithm: "HS256", expiresIn: 86400000 })
 
         const updateDoc = {
             $set: {
